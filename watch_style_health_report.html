@@ -1,0 +1,1813 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>华为健康数据报告生成器 - 手表式</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'PingFang SC', 'Helvetica Neue', Arial, sans-serif;
+            background: #f5f7fa;
+            min-height: 100vh;
+            padding: 10px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+        }
+
+        .header {
+            background: #2c3e50;
+            color: white;
+            padding: 18px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 1.8em;
+            margin-bottom: 6px;
+        }
+
+        .header .subtitle {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            padding: 15px;
+        }
+
+        /* 手表主界面 */
+        .watch-main {
+            display: none;
+            text-align: center;
+            padding: 20px 0;
+        }
+
+        .watch-container {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            margin: 0 auto 30px;
+            background: #1a1a1a;
+            border-radius: 50%;
+            border: 8px solid #333;
+            box-shadow: 
+                0 0 30px rgba(0, 0, 0, 0.3),
+                inset 0 0 50px rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .watch-container:hover {
+            transform: scale(1.02);
+        }
+
+        /* 表盘刻度 */
+        .watch-face {
+            position: relative;
+            width: 260px;
+            height: 260px;
+            background: radial-gradient(circle, #2a2a2a, #1a1a1a);
+            border-radius: 50%;
+            border: 2px solid #555;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .watch-scale {
+            position: absolute;
+            width: 240px;
+            height: 240px;
+        }
+
+        .scale-mark {
+            position: absolute;
+            width: 2px;
+            height: 15px;
+            background: #888;
+            top: 10px;
+            left: 50%;
+            transform-origin: center 110px;
+        }
+
+        .scale-mark.major {
+            width: 3px;
+            height: 25px;
+            background: #fff;
+        }
+
+        /* 数字显示 */
+        .watch-time {
+            position: absolute;
+            top: 60px;
+            color: #fff;
+            font-size: 1.8em;
+            font-weight: 300;
+            font-family: 'Arial', sans-serif;
+            text-align: center;
+            width: 100%;
+        }
+
+        .watch-date {
+            position: absolute;
+            top: 90px;
+            color: #ccc;
+            font-size: 0.8em;
+            text-align: center;
+            width: 100%;
+        }
+
+        .watch-moon {
+            position: absolute;
+            bottom: 80px;
+            color: #f0f0f0;
+            font-size: 0.9em;
+            text-align: center;
+            width: 100%;
+        }
+
+        .center-button {
+            position: relative;
+            width: 70px;
+            height: 70px;
+            background: radial-gradient(circle, #4a90e2, #357abd);
+            border-radius: 50%;
+            border: 3px solid #555;
+            color: white;
+            font-size: 0.7em;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 
+                0 2px 8px rgba(74, 144, 226, 0.3),
+                inset 0 1px 2px rgba(255, 255, 255, 0.2);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            line-height: 1.1;
+            z-index: 10;
+        }
+
+        .center-button:hover {
+            background: radial-gradient(circle, #5ba0f2, #4580cd);
+            box-shadow: 
+                0 4px 12px rgba(74, 144, 226, 0.4),
+                inset 0 1px 2px rgba(255, 255, 255, 0.3);
+        }
+
+        .center-button:active {
+            transform: scale(0.95);
+            background: radial-gradient(circle, #3a80d2, #2a60ad);
+        }
+
+        .module-button {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: 2px solid #444;
+            color: white;
+            font-size: 0.6em;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            line-height: 1.1;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            z-index: 5;
+        }
+
+        /* 移除所有动态效果 - 静态按钮 */
+
+        .module-sleep {
+            top: -5px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #3498db;
+        }
+
+        .module-activity {
+            bottom: -5px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #27ae60;
+        }
+
+        .module-cycle {
+            right: -5px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #9b59b6;
+        }
+
+        .module-report {
+            left: -5px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #e74c3c;
+        }
+
+        .module-icon {
+            font-size: 1.2em;
+            margin-bottom: 2px;
+        }
+
+        /* 数据录入界面 */
+        .data-entry {
+            display: none;
+        }
+
+        .section {
+            margin-bottom: 15px;
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 1px 6px rgba(0, 0, 0, 0.08);
+        }
+
+        .section-title {
+            font-size: 1.1em;
+            color: #2c3e50;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .back-button {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 15px;
+            font-size: 0.8em;
+            cursor: pointer;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .back-button:hover {
+            background: #5a6268;
+            transform: translateY(-1px);
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+        }
+
+        /* 旋钮组件样式 */
+        .knob-container {
+            background: white;
+            border-radius: 8px;
+            padding: 12px;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .knob-container:hover {
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+        }
+
+        .knob-label {
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 0.85em;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .knob-input-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .knob-input {
+            width: 60px;
+            padding: 4px 6px;
+            border: 2px solid #e9ecef;
+            border-radius: 6px;
+            font-size: 0.8em;
+            text-align: center;
+            transition: border-color 0.3s;
+        }
+
+        .knob-input:focus {
+            outline: none;
+            border-color: #4facfe;
+        }
+
+        .knob-unit-small {
+            font-size: 0.75em;
+            color: #6c757d;
+            white-space: nowrap;
+        }
+
+        .knob-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .knob-controls {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 6px;
+        }
+
+        .knob-btn {
+            background: #4facfe;
+            color: white;
+            border: none;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+        }
+
+        .knob-btn:hover {
+            background: #3d8bfe;
+            transform: scale(1.1);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+        }
+
+        .knob-btn:active {
+            transform: scale(0.95);
+        }
+
+        .knob {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: conic-gradient(from 0deg, #e1e8ed 0deg, #4facfe var(--rotation, 0deg), #e1e8ed var(--rotation, 0deg));
+            position: relative;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid white;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+        }
+
+        .knob:hover {
+            transform: scale(1.05);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .knob::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 8px;
+            height: 8px;
+            background: white;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 2;
+        }
+
+        .knob::after {
+            content: '';
+            position: absolute;
+            top: 4px;
+            left: 50%;
+            width: 2px;
+            height: 18px;
+            background: #4facfe;
+            transform: translateX(-50%) rotate(calc(var(--rotation, 0deg) - 90deg));
+            transform-origin: center 26px;
+            border-radius: 1px;
+        }
+
+        .knob-value {
+            font-size: 1em;
+            font-weight: bold;
+            color: #2c3e50;
+            background: #f8f9fa;
+            padding: 4px 8px;
+            border-radius: 6px;
+            min-width: 50px;
+            text-align: center;
+            border: 1px solid #e9ecef;
+        }
+
+        .knob-unit {
+            font-size: 0.7em;
+            color: #6c757d;
+        }
+
+        /* Emoji选择器样式 */
+        .emoji-container {
+            background: white;
+            border-radius: 8px;
+            padding: 12px;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .emoji-label {
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 0.9em;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .emoji-options {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+
+        .emoji-option {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            padding: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .emoji-option:hover {
+            background: #e9ecef;
+            transform: translateY(-2px);
+        }
+
+        .emoji-option.selected {
+            border-color: #4facfe;
+            background: #e3f2fd;
+            transform: translateY(-1px);
+            box-shadow: 0 3px 8px rgba(79, 172, 254, 0.3);
+        }
+
+        .emoji-icon {
+            font-size: 1.8em;
+        }
+
+        .emoji-text {
+            font-size: 0.8em;
+            color: #495057;
+        }
+
+        /* 按钮样式 */
+        .add-day-btn, .generate-btn {
+            background: #34495e;
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 6px;
+            font-size: 0.8em;
+            cursor: pointer;
+            margin: 10px 8px;
+            display: inline-block;
+            transition: all 0.2s ease;
+        }
+
+        .add-day-btn:hover {
+            background: #2c3e50;
+            box-shadow: 0 2px 8px rgba(52, 73, 94, 0.3);
+        }
+
+        .generate-btn {
+            background: #3498db;
+            font-size: 0.85em;
+            padding: 12px 24px;
+        }
+
+        .generate-btn:hover {
+            background: #2980b9;
+            box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
+        }
+
+        .generate-btn.success {
+            background: #27ae60;
+        }
+
+
+
+        /* 报告输出区域 */
+        .report-output {
+            background: linear-gradient(135deg, #f8f9fa, #ffffff);
+            border: 2px dashed #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            min-height: 120px;
+            margin-top: 15px;
+            white-space: pre-wrap;
+            font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+            line-height: 1.4;
+            color: #495057;
+            font-size: 0.85em;
+        }
+
+        .button-group {
+            text-align: center;
+            margin-top: 15px;
+        }
+
+        /* 隐藏的input用于存储值 */
+        .hidden-input {
+            display: none;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            body {
+                padding: 5px;
+            }
+            
+            .container {
+                margin: 2px;
+            }
+            
+            .main-content {
+                padding: 10px;
+            }
+            
+            .watch-container {
+                width: 250px;
+                height: 250px;
+            }
+            
+            .watch-face {
+                width: 210px;
+                height: 210px;
+            }
+            
+            .watch-scale {
+                width: 190px;
+                height: 190px;
+            }
+            
+            .scale-mark {
+                top: 8px;
+                transform-origin: center 87px;
+            }
+            
+            .scale-mark.major {
+                height: 20px;
+            }
+            
+            .scale-mark {
+                height: 12px;
+            }
+            
+            .center-button {
+                width: 55px;
+                height: 55px;
+                font-size: 0.6em;
+            }
+            
+            .module-button {
+                width: 45px;
+                height: 45px;
+                font-size: 0.55em;
+            }
+            
+            .watch-time {
+                font-size: 1.4em;
+                top: 50px;
+            }
+            
+            .watch-date {
+                font-size: 0.7em;
+                top: 75px;
+            }
+            
+            .watch-moon {
+                font-size: 0.8em;
+                bottom: 60px;
+            }
+            
+            .form-grid {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+            
+            .knob-input-group {
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            .emoji-options {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 8px;
+            }
+            
+            .emoji-option {
+                padding: 8px;
+            }
+            
+            #watchReportArea {
+                margin: 15px 5px 0 5px;
+                padding: 12px;
+                font-size: 0.8em;
+                max-height: 300px;
+                overflow-y: auto;
+            }
+            
+            #watchReportArea button {
+                padding: 3px 6px;
+                font-size: 0.65em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>华为健康数据报告</h1>
+            <div class="subtitle" id="dataPeriod">数据周期：加载中...</div>
+        </div>
+
+        <div class="main-content">
+            <!-- 手表主界面 -->
+            <div class="watch-main" id="watchMain">
+                <h2 style="margin-bottom: 20px; color: #2c3e50;">智能健康手表</h2>
+                <div class="watch-container" onclick="showWatchMain()">
+                    <div class="watch-face">
+                        <div class="watch-scale" id="watchScale">
+                            <!-- 表盘刻度将通过JavaScript生成 -->
+                        </div>
+                        <div class="watch-time" id="watchTime">
+                            --:--
+                        </div>
+                        <div class="watch-date" id="watchDate">
+                            11月27日 周三
+                        </div>
+                        <div class="watch-moon" id="watchMoon">
+                            🌑 新月
+                        </div>
+                        
+
+                        
+                        <button class="module-button module-sleep" onclick="event.stopPropagation(); openModule('sleep')">
+                            <div class="module-icon">😴</div>
+                            <div>睡眠</div>
+                        </button>
+                        
+                        <button class="module-button module-activity" onclick="event.stopPropagation(); openModule('activity')">
+                            <div class="module-icon">🏃‍♀️</div>
+                            <div>运动</div>
+                        </button>
+                        
+                        <button class="module-button module-cycle" onclick="event.stopPropagation(); openModule('cycle')">
+                            <div class="module-icon">🌙</div>
+                            <div>周期</div>
+                        </button>
+                        
+                        <button class="module-button module-report" onclick="event.stopPropagation(); generateAndCopyReportFromWatch()">
+                            <div class="module-icon">📊</div>
+                            <div>报告</div>
+                        </button>
+                    </div>
+                </div>
+                <p style="color: #6c757d; font-size: 0.9em; margin-top: 15px;">点击表盘外区域或按钮返回主界面</p>
+                
+                <!-- 报告显示区域 -->
+                <div id="watchReportArea" style="display: none; margin-top: 20px; background: linear-gradient(135deg, #f8f9fa, #ffffff); border: 2px dashed #dee2e6; border-radius: 12px; padding: 15px; min-height: 120px; white-space: pre-wrap; font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif; line-height: 1.5; color: #495057; font-size: 0.85em; position: relative;">
+                    <div style="position: absolute; top: 8px; right: 8px;">
+                        <button onclick="hideWatchReport()" style="background: #dc3545; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 0.7em; cursor: pointer;">✕ 关闭</button>
+                    </div>
+                    <div id="watchReportContent">请录入健康数据后点击报告按钮查看汇总</div>
+                </div>
+            </div>
+
+            <!-- 数据录入界面 -->
+            <div class="data-entry" id="dataEntry">
+                <button class="back-button" onclick="showWatchMain()" style="display: inline-flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 1.2em;">⌚</span>
+                    返回主界面
+                </button>
+                <div class="section">
+                    <h2 class="section-title" id="moduleTitle">模块数据录入</h2>
+                    
+                    <form id="healthDataForm">
+                        <div id="daysContainer">
+                            <!-- 天数表单将通过JavaScript动态生成 -->
+                        </div>
+                        
+                        <div class="button-group">
+                            <button type="button" class="add-day-btn" onclick="addDay()">+ 添加天数</button>
+                            <button type="button" class="generate-btn" onclick="generateAndCopyReport()">生成并复制报告</button>
+                        </div>
+                        
+                        <!-- 功能按钮组 -->
+                        <div class="button-group">
+                            <button type="button" style="background: #dc3545; color: white; border: none; padding: 6px 12px; border-radius: 4px; font-size: 0.7em; cursor: pointer; margin: 5px;" onclick="resetAllData()">重置数据</button>
+                            <button type="button" style="background: #28a745; color: white; border: none; padding: 6px 12px; border-radius: 4px; font-size: 0.7em; cursor: pointer; margin: 5px;" onclick="checkAndReturnToMain()">已录入，可返回</button>
+                            <button type="button" style="background: #17a2b8; color: white; border: none; padding: 6px 12px; border-radius: 4px; font-size: 0.7em; cursor: pointer; margin: 5px;" onclick="console.log('当前全局数据:', globalHealthData)">查看存储数据</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- 报告输出区域 -->
+                <div class="section">
+                    <h2 class="section-title">健康报告</h2>
+                    <div id="reportOutput" class="report-output">
+请在上方表单中输入健康数据，然后点击"生成并复制报告"按钮获取汇总报告。
+                    </div>
+                </div>
+            </div>
+
+            <div style="background: #fff3cd; padding: 12px; border-radius: 8px; border-left: 3px solid #ffc107; font-size: 0.8em; color: #856404; margin-top: 15px;">
+                <strong>设备信息：</strong> HUAWEI WATCH 4 | 数据来源：华为运动健康App
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentModule = '';
+        let dayCount = 1; // 默认1天
+        
+        // 全局数据存储：保存所有模块的录入数据
+        let globalHealthData = {};
+
+        // 旋钮配置
+        const knobConfigs = {
+            deepSleep: { min: 0, max: 10, step: 0.5, unit: '小时', default: 6.0 },
+            sleepScore: { min: 0, max: 100, step: 1, unit: '分', default: 82 },
+            stressLevel: { min: 0, max: 100, step: 1, unit: '', default: 65 },
+            dailySteps: { min: 0, max: 20000, step: 100, unit: '步', default: 7500 },
+            restingHR: { min: 40, max: 120, step: 1, unit: '次/分', default: 68 },
+            bloodOxygen: { min: 80, max: 100, step: 1, unit: '%', default: 97 }
+        };
+
+        // Emoji选项配置
+        const emojiConfigs = {
+            cycleStatus: [
+                { value: '安全期', emoji: '🛡️', text: '安全期' },
+                { value: '排卵期', emoji: '🌟', text: '排卵期' },
+                { value: '经期', emoji: '🌸', text: '经期' }
+            ],
+            moodStatus: [
+                { value: '普通', emoji: '😐', text: '普通' },
+                { value: '疲惫', emoji: '😴', text: '疲惫' },
+                { value: '易怒', emoji: '😤', text: '易怒' }
+            ]
+        };
+
+        // 模块配置
+        const moduleConfigs = {
+            sleep: {
+                title: '睡眠健康数据录入',
+                fields: ['deepSleep', 'restingHR', 'bloodOxygen'],
+                description: '包含睡眠时长、静息心率、血氧饱和度'
+            },
+            activity: {
+                title: '运动活力数据录入', 
+                fields: ['stressLevel', 'dailySteps', 'moodStatus'],
+                description: '包含压力值、步数、心情状态'
+            },
+            cycle: {
+                title: '生理周期数据录入',
+                fields: ['cycleStatus'],
+                description: '生理周期状态跟踪'
+            }
+        };
+
+        function showWatchMain() {
+            document.getElementById('watchMain').style.display = 'block';
+            document.getElementById('dataEntry').style.display = 'none';
+            document.getElementById('watchReportArea').style.display = 'none';
+            currentModule = '';
+        }
+
+        function openModule(moduleType) {
+            currentModule = moduleType;
+            const config = moduleConfigs[moduleType];
+            
+            document.getElementById('watchMain').style.display = 'none';
+            document.getElementById('dataEntry').style.display = 'block';
+            document.getElementById('watchReportArea').style.display = 'none';
+            document.getElementById('moduleTitle').innerHTML = `
+                ${config.title}
+                <span style="font-size: 0.8em; color: #6c757d; font-weight: normal;">- ${config.description}</span>
+            `;
+            
+            // 初始化数据
+            initializeForm();
+        }
+
+        function initializeForm() {
+            const container = document.getElementById('daysContainer');
+            container.innerHTML = '';
+            dayCount = 1;
+            
+            for (let i = 1; i <= dayCount; i++) {
+                const daySection = createDaySection(i);
+                container.appendChild(daySection);
+            }
+            
+            // 初始化完成后恢复当前模块的已保存数据
+            setTimeout(() => {
+                restoreCurrentModuleData();
+            }, 100);
+        }
+
+        function createKnob(fieldName, config, dayNumber, value) {
+            const percentage = ((value - config.min) / (config.max - config.min)) * 270;
+            
+            return `
+                <div class="knob-container">
+                    <div class="knob-label">
+                        <span>📊</span>
+                        <span>${getFieldLabel(fieldName)}</span>
+                    </div>
+                    <div class="knob-input-group">
+                        <div class="knob-wrapper">
+                            <div class="knob-controls">
+                                <button type="button" class="knob-btn" onclick="adjustKnob('${fieldName}', ${dayNumber}, ${config.step}, 'decrease')">−</button>
+                                <button type="button" class="knob-btn" onclick="adjustKnob('${fieldName}', ${dayNumber}, ${config.step}, 'increase')">+</button>
+                            </div>
+                            <div class="knob" 
+                                 onclick="adjustKnob('${fieldName}', ${dayNumber}, ${config.step}, 'increase')" 
+                                 style="--rotation: ${percentage}deg"
+                                 id="knob-${fieldName}-${dayNumber}">
+                            </div>
+                            <div class="knob-value">
+                                <span id="value-${fieldName}-${dayNumber}">${value}</span>
+                                <span class="knob-unit">${config.unit}</span>
+                            </div>
+                        </div>
+                        <div class="direct-input">
+                            <input type="number" 
+                                   class="knob-input" 
+                                   id="direct-${fieldName}-${dayNumber}"
+                                   placeholder="直接输入"
+                                   min="${config.min}"
+                                   max="${config.max}"
+                                   step="${config.step}"
+                                   oninput="updateFromDirectInput('${fieldName}', ${dayNumber}, '${config.unit}')">
+                            <span class="knob-unit-small">${config.unit}</span>
+                        </div>
+                        <input type="hidden" name="${fieldName}_${dayNumber}" id="input-${fieldName}-${dayNumber}" value="${value}">
+                    </div>
+                </div>
+            `;
+        }
+
+        // 保存当前模块数据的函数
+        function saveCurrentModuleData() {
+            if (!currentModule) return;
+            
+            // 确保全局数据对象结构正确
+            if (!globalHealthData[currentModule]) {
+                globalHealthData[currentModule] = {};
+            }
+            
+            const config = moduleConfigs[currentModule];
+            
+            // 获取当前页面中的所有天数
+            const daySections = document.querySelectorAll('.day-section');
+            const currentDayCount = daySections.length;
+            
+            // 为每一天保存数据
+            for (let day = 1; day <= currentDayCount; day++) {
+                const dayData = { day: day, module: currentModule };
+                
+                config.fields.forEach(fieldName => {
+                    if (knobConfigs[fieldName]) {
+                        // 保存数值字段
+                        const input = document.getElementById(`input-${fieldName}-${day}`);
+                        if (input && input.value && !isNaN(parseFloat(input.value))) {
+                            dayData[fieldName] = parseFloat(input.value);
+                        }
+                    } else if (emojiConfigs[fieldName]) {
+                        // 保存选择字段
+                        const selectedOption = document.querySelector(`input[name="${fieldName}_${day}"]`);
+                        if (selectedOption && selectedOption.value) {
+                            dayData[fieldName] = selectedOption.value;
+                        }
+                    }
+                });
+                
+                // 保存到全局存储
+                if (Object.keys(dayData).length > 2) { // 超过day, module两个字段才算有效数据
+                    globalHealthData[currentModule][day] = dayData;
+                } else {
+                    // 如果没有有效数据，删除该天的记录
+                    delete globalHealthData[currentModule][day];
+                }
+            }
+            
+            console.log(`已保存 ${currentModule} 模块数据:`, globalHealthData[currentModule]);
+        }
+
+        // 从全局存储恢复当前模块数据的函数
+        function restoreCurrentModuleData() {
+            if (!currentModule) return;
+            
+            const savedModuleData = globalHealthData[currentModule];
+            if (!savedModuleData || Object.keys(savedModuleData).length === 0) return;
+            
+            const config = moduleConfigs[currentModule];
+            
+            // 获取保存数据的天数
+            const savedDays = Object.keys(savedModuleData).map(day => parseInt(day)).filter(day => !isNaN(day));
+            if (savedDays.length === 0) return;
+            
+            // 确定需要恢复的天数（可能比当前页面显示的要多）
+            const maxDay = Math.max(...savedDays);
+            
+            // 如果保存的天数比当前显示的多，需要添加天数
+            const currentDays = document.querySelectorAll('.day-section').length;
+            if (maxDay > currentDays) {
+                for (let day = currentDays + 1; day <= maxDay; day++) {
+                    addDay();
+                }
+            }
+            
+            // 恢复每一天的数据
+            savedDays.forEach(day => {
+                const dayData = savedModuleData[day];
+                if (!dayData) return;
+                
+                config.fields.forEach(fieldName => {
+                    if (dayData[fieldName] !== undefined) {
+                        if (knobConfigs[fieldName]) {
+                            // 恢复数值字段
+                            const input = document.getElementById(`input-${fieldName}-${day}`);
+                            const directInput = document.getElementById(`direct-${fieldName}-${day}`);
+                            const valueDisplay = document.getElementById(`value-${fieldName}-${day}`);
+                            const knob = document.getElementById(`knob-${fieldName}-${day}`);
+                            
+                            if (input && knob && knobConfigs[fieldName]) {
+                                const value = dayData[fieldName];
+                                const knobConfig = knobConfigs[fieldName];
+                                
+                                input.value = value;
+                                if (directInput) directInput.value = value;
+                                if (valueDisplay) valueDisplay.textContent = fieldName.includes('Steps') ? Math.round(value) : value;
+                                
+                                // 更新旋钮角度
+                                const percentage = ((value - knobConfig.min) / (knobConfig.max - knobConfig.min)) * 270;
+                                knob.style.setProperty('--rotation', percentage + 'deg');
+                            }
+                        } else if (emojiConfigs[fieldName]) {
+                            // 恢复选择字段
+                            const option = document.querySelector(`input[name="${fieldName}_${day}"][value="${dayData[fieldName]}"]`);
+                            if (option) {
+                                selectEmoji(fieldName, day, dayData[fieldName], option.closest('.emoji-option'));
+                            }
+                        }
+                    }
+                });
+            });
+            
+            
+            console.log(`已恢复 ${currentModule} 模块数据:`, savedModuleData);
+        }
+
+        function createEmojiSelector(fieldName, config, dayNumber, defaultValue) {
+            return `
+                <div class="emoji-container">
+                    <div class="emoji-label">
+                        <span>${getEmojiLabel(fieldName)}</span>
+                        <span>${getFieldLabel(fieldName)}</span>
+                    </div>
+                    <div class="emoji-options">
+                        ${config.map(option => `
+                            <div class="emoji-option ${option.value === defaultValue ? 'selected' : ''}" 
+                                 onclick="selectEmoji('${fieldName}', ${dayNumber}, '${option.value}', this)">
+                                <div class="emoji-icon">${option.emoji}</div>
+                                <div class="emoji-text">${option.text}</div>
+                                <input type="hidden" name="${fieldName}_${dayNumber}" value="${option.value}">
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        function getFieldLabel(fieldName) {
+            const labels = {
+                deepSleep: '睡眠时长',
+                sleepScore: '睡眠得分',
+                stressLevel: '压力值',
+                dailySteps: '步数',
+                restingHR: '静息心率',
+                bloodOxygen: '血氧饱和度',
+                cycleStatus: '生理周期状态',
+                moodStatus: '主观感受'
+            };
+            return labels[fieldName] || fieldName;
+        }
+
+        function getEmojiLabel(fieldName) {
+            const emojis = {
+                cycleStatus: '🌙',
+                moodStatus: '😊'
+            };
+            return emojis[fieldName] || '📝';
+        }
+
+        function adjustKnob(fieldName, dayNumber, step, direction) {
+            const input = document.getElementById(`input-${fieldName}-${dayNumber}`);
+            const valueDisplay = document.getElementById(`value-${fieldName}-${dayNumber}`);
+            const knob = document.getElementById(`knob-${fieldName}-${dayNumber}`);
+            
+            if (!input || !valueDisplay || !knob) return;
+            
+            const config = knobConfigs[fieldName];
+            let currentValue = parseFloat(input.value);
+            let newValue;
+            
+            if (direction === 'decrease') {
+                newValue = currentValue - step;
+            } else {
+                newValue = currentValue + step;
+            }
+            
+            // 循环滚动
+            if (newValue > config.max) newValue = config.min;
+            if (newValue < config.min) newValue = config.max;
+            
+            input.value = newValue;
+            valueDisplay.textContent = fieldName.includes('Steps') ? Math.round(newValue) : newValue;
+            
+            // 清除直接输入框
+            const directInput = document.getElementById(`direct-${fieldName}-${dayNumber}`);
+            if (directInput) directInput.value = '';
+            
+            // 更新旋钮角度
+            const percentage = ((newValue - config.min) / (config.max - config.min)) * 270;
+            knob.style.setProperty('--rotation', percentage + 'deg');
+            
+            // 自动保存数据到全局存储
+            saveCurrentModuleData();
+        }
+
+        function updateFromDirectInput(fieldName, dayNumber, unit) {
+            const directInput = document.getElementById(`direct-${fieldName}-${dayNumber}`);
+            const input = document.getElementById(`input-${fieldName}-${dayNumber}`);
+            const valueDisplay = document.getElementById(`value-${fieldName}-${dayNumber}`);
+            const knob = document.getElementById(`knob-${fieldName}-${dayNumber}`);
+            
+            if (!directInput || !input || !valueDisplay || !knob) return;
+            
+            const config = knobConfigs[fieldName];
+            const newValue = parseFloat(directInput.value);
+            
+            // 验证输入值是否在范围内
+            if (isNaN(newValue) || newValue < config.min || newValue > config.max) {
+                return; // 不更新，保持当前状态
+            }
+            
+            // 更新所有相关值
+            input.value = newValue;
+            valueDisplay.textContent = fieldName.includes('Steps') ? Math.round(newValue) : newValue;
+            
+            // 更新旋钮角度
+            const percentage = ((newValue - config.min) / (config.max - config.min)) * 270;
+            knob.style.setProperty('--rotation', percentage + 'deg');
+            
+            // 自动保存数据到全局存储
+            saveCurrentModuleData();
+        }
+
+        function selectEmoji(fieldName, dayNumber, value, element) {
+            // 移除同一组中其他选项的选中状态
+            const siblings = element.parentElement.children;
+            for (let sibling of siblings) {
+                sibling.classList.remove('selected');
+            }
+            
+            // 添加当前选项的选中状态
+            element.classList.add('selected');
+            
+            // 更新隐藏input的值
+            const hiddenInput = element.querySelector('input[type="hidden"]');
+            if (hiddenInput) {
+                hiddenInput.value = value;
+            }
+            
+            // 自动保存数据到全局存储
+            saveCurrentModuleData();
+        }
+
+        function createDaySection(dayNumber) {
+            const daySection = document.createElement('div');
+            daySection.className = 'day-section';
+            daySection.id = `day-${dayNumber}`;
+            daySection.style.cssText = `
+                border: 2px solid #e9ecef;
+                border-radius: 10px;
+                padding: 15px;
+                margin-bottom: 15px;
+                position: relative;
+                background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+                transition: all 0.3s ease;
+            `;
+            
+            daySection.onmouseenter = function() {
+                this.style.borderColor = '#4facfe';
+                this.style.boxShadow = '0 2px 8px rgba(79, 172, 254, 0.1)';
+            };
+            daySection.onmouseleave = function() {
+                this.style.borderColor = '#e9ecef';
+                this.style.boxShadow = 'none';
+            };
+            
+            const dayHeader = document.createElement('div');
+            dayHeader.style.cssText = `
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 15px;
+            `;
+            
+            const dayTitle = document.createElement('div');
+            dayTitle.style.cssText = `
+                font-weight: 600;
+                color: #495057;
+                font-size: 1em;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            `;
+            dayTitle.innerHTML = `
+                <span style="background: linear-gradient(135deg, #4facfe, #00f2fe); color: white; padding: 4px 10px; border-radius: 15px; font-size: 0.8em;">第${dayNumber}天</span>
+                <span>📅</span>
+            `;
+            
+            dayHeader.appendChild(dayTitle);
+            
+            if (dayNumber > 1) {
+                const removeBtn = document.createElement('button');
+                removeBtn.type = 'button';
+                removeBtn.textContent = '删除';
+                removeBtn.style.cssText = `
+                    background: #dc3545;
+                    color: white;
+                    border: none;
+                    padding: 6px 12px;
+                    border-radius: 10px;
+                    font-size: 0.7em;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                `;
+                removeBtn.onmouseenter = function() {
+                    this.style.background = '#c82333';
+                    this.style.transform = 'translateY(-1px)';
+                };
+                removeBtn.onmouseleave = function() {
+                    this.style.background = '#dc3545';
+                    this.style.transform = 'translateY(0)';
+                };
+                removeBtn.onclick = () => removeDay(dayNumber);
+                dayHeader.appendChild(removeBtn);
+            }
+            
+            daySection.appendChild(dayHeader);
+            
+            // 创建表单网格
+            const formGrid = document.createElement('div');
+            formGrid.className = 'form-grid';
+            
+            const config = moduleConfigs[currentModule];
+            const defaults = {
+                1: { deepSleep: 6.0, restingHR: 68, bloodOxygen: 97, stressLevel: 65, dailySteps: 7500, moodStatus: '普通', cycleStatus: '安全期' }
+            };
+            
+            const dayDefaults = defaults[dayNumber] || defaults[1];
+            
+            // 根据模块类型创建字段
+            config.fields.forEach(fieldName => {
+                if (knobConfigs[fieldName]) {
+                    const value = dayDefaults[fieldName] || knobConfigs[fieldName].default;
+                    formGrid.innerHTML += createKnob(fieldName, knobConfigs[fieldName], dayNumber, value);
+                } else if (emojiConfigs[fieldName]) {
+                    const value = dayDefaults[fieldName] || emojiConfigs[fieldName][0].value;
+                    formGrid.innerHTML += createEmojiSelector(fieldName, emojiConfigs[fieldName], dayNumber, value);
+                }
+            });
+            
+            daySection.appendChild(formGrid);
+            
+            return daySection;
+        }
+
+        function addDay() {
+            if (dayCount >= 7) {
+                alert('最多只能录入7天数据');
+                return;
+            }
+            
+            dayCount++;
+            const daySection = createDaySection(dayCount);
+            const container = document.getElementById('daysContainer');
+            container.appendChild(daySection);
+        }
+
+        function removeDay(dayNumber) {
+            if (dayCount <= 1) {
+                alert('至少需要保留一天数据');
+                return;
+            }
+            
+            const daySection = document.getElementById(`day-${dayNumber}`);
+            if (daySection) {
+                daySection.remove();
+                dayCount--;
+            }
+        }
+
+        function generateAndCopyReport() {
+            // 从数据录入界面生成报告
+            let allData = [];
+            
+            if (currentModule) {
+                // 从具体模块收集数据
+                allData = collectModuleData();
+            } else {
+                // 如果没有选择模块，尝试从当前可见的表单收集数据
+                const daysContainer = document.getElementById('daysContainer');
+                const daySections = daysContainer.querySelectorAll('.day-section');
+                
+                if (daySections.length === 0) {
+                    alert('请先选择健康模块并录入数据');
+                    return;
+                }
+                
+                // 收集当前模块的数据
+                allData = collectModuleData();
+            }
+            
+            if (allData.length === 0) {
+                alert('请至少录入一天的健康数据');
+                return;
+            }
+            
+            // 确保在数据录入界面
+            if (document.getElementById('dataEntry').style.display !== 'block') {
+                openModule('sleep'); // 默认打开一个模块界面
+            }
+            
+            // 生成报告并显示在报告输出区域
+            const report = generateHealthReport(allData);
+            document.getElementById('reportOutput').textContent = report;
+            
+            // 复制到剪贴板
+            copyReport(report);
+            
+            // 显示成功消息
+            showCopySuccess();
+        }
+
+        function generateAndCopyReportFromWatch() {
+            // 从手表主界面生成报告，只包含实际录入的数据
+            const allData = collectActualEnteredData();
+            
+            if (allData.length === 0) {
+                // 显示提示信息
+                showWatchReport('请先在睡眠、运动、周期模块中录入健康数据，然后再次点击报告按钮。\n\n提示：\n• 点击😴睡眠录入睡眠时长、静息心率、血氧数据\n• 点击🏃‍♀️运动录入压力值、步数、心情数据\n• 点击🌙周期录入生理周期数据');
+                return;
+            }
+            
+            // 生成报告
+            const report = generateHealthReport(allData);
+            
+            // 先显示报告内容
+            showWatchReport(report);
+            
+            // 复制到剪贴板
+            copyReport(report);
+            
+            // 添加延迟后显示复制成功提示（确保报告已经显示）
+            setTimeout(() => {
+                showWatchReport(report + '\n\n' + '✅ 报告已复制到剪贴板！\n您可以粘贴到任何文本编辑器中保存或分享。');
+            }, 100);
+        }
+
+
+
+        function collectModuleData() {
+            const allData = [];
+            for (let day = 1; day <= dayCount; day++) {
+                const daySection = document.getElementById(`day-${day}`);
+                if (!daySection) continue;
+                
+                const dayData = {
+                    day: day,
+                    module: currentModule
+                };
+                
+                // 收集数值数据
+                const config = moduleConfigs[currentModule];
+                config.fields.forEach(fieldName => {
+                    if (knobConfigs[fieldName]) {
+                        const directInput = document.getElementById(`direct-${fieldName}-${day}`);
+                        if (directInput && directInput.value && !isNaN(parseFloat(directInput.value))) {
+                            dayData[fieldName] = parseFloat(directInput.value);
+                        } else {
+                            const hiddenInput = document.getElementById(`input-${fieldName}-${day}`);
+                            dayData[fieldName] = hiddenInput ? parseFloat(hiddenInput.value) || 0 : 0;
+                        }
+                    } else if (emojiConfigs[fieldName]) {
+                        const selectedOption = daySection.querySelector(`input[name="${fieldName}_${day}"]`);
+                        dayData[fieldName] = selectedOption ? selectedOption.value : emojiConfigs[fieldName][0].value;
+                    }
+                });
+                
+                allData.push(dayData);
+            }
+            return allData;
+        }
+
+        function collectActualEnteredData() {
+            // 优先从全局存储收集数据，确保获取到所有录入的数据
+            const allData = [];
+            
+            // 遍历所有已保存的模块数据
+            Object.keys(globalHealthData).forEach(moduleType => {
+                const moduleData = globalHealthData[moduleType];
+                if (moduleData && Object.keys(moduleData).length > 0) {
+                    // 遍历所有天数的数据
+                    Object.keys(moduleData).forEach(dayKey => {
+                        const dayData = moduleData[dayKey];
+                        if (dayData && dayData.day && Object.keys(dayData).length > 2) {
+                            allData.push({
+                                day: dayData.day,
+                                module: moduleType,
+                                ...dayData
+                            });
+                        }
+                    });
+                }
+            });
+            
+            // 如果全局存储中没有数据，尝试从当前DOM获取（作为备用）
+            if (allData.length === 0) {
+                // 遍历所有模块类型：sleep, activity, cycle
+                Object.keys(moduleConfigs).forEach(moduleType => {
+                    const config = moduleConfigs[moduleType];
+                    const moduleData = { day: 1, module: moduleType };
+                    let hasData = false;
+                    
+                    // 检查该模块的所有字段
+                    config.fields.forEach(fieldName => {
+                        if (knobConfigs[fieldName]) {
+                            // 数值字段，尝试查找输入元素
+                            const selectors = [
+                                `#input-${fieldName}-1`,
+                                `#direct-${fieldName}-1`,
+                                `input[name="${fieldName}_1"]`
+                            ];
+                            
+                            for (let selector of selectors) {
+                                const input = document.querySelector(selector);
+                                if (input && input.value && !isNaN(parseFloat(input.value))) {
+                                    const value = parseFloat(input.value);
+                                    // 验证值是否在合理范围内
+                                    const configRange = knobConfigs[fieldName];
+                                    if (value >= configRange.min && value <= configRange.max) {
+                                        moduleData[fieldName] = value;
+                                        hasData = true;
+                                        break;
+                                    }
+                                }
+                            }
+                        } else if (emojiConfigs[fieldName]) {
+                            // 选择字段，检查是否有选中的选项
+                            const selectedOption = document.querySelector(`input[name="${fieldName}_1"]`);
+                            if (selectedOption && selectedOption.value) {
+                                moduleData[fieldName] = selectedOption.value;
+                                hasData = true;
+                            }
+                        }
+                    });
+                    
+                    // 如果该模块有数据，添加到结果中
+                    if (hasData) {
+                        allData.push(moduleData);
+                    }
+                });
+            }
+            
+            return allData;
+        }
+        
+        function showWatchReport(content) {
+            const reportArea = document.getElementById('watchReportArea');
+            const reportContent = document.getElementById('watchReportContent');
+            
+            if (reportArea && reportContent) {
+                reportContent.textContent = content;
+                reportArea.style.display = 'block';
+                
+                // 滚动到报告显示区域
+                reportArea.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        }
+        
+        function hideWatchReport() {
+            const reportArea = document.getElementById('watchReportArea');
+            if (reportArea) {
+                reportArea.style.display = 'none';
+            }
+        }
+
+        // 测试函数：验证报告功能是否正常
+        function testReportFunctions() {
+            console.log('开始测试报告功能...');
+            
+            // 测试 1：检查必要函数是否存在
+            const requiredFunctions = ['generateAndCopyReport', 'generateAndCopyReportFromWatch', 'collectModuleData', 'generateHealthReport', 'copyReport'];
+            let testPassed = true;
+            
+            requiredFunctions.forEach(funcName => {
+                if (typeof window[funcName] !== 'function') {
+                    console.error(`❌ 函数 ${funcName} 不存在`);
+                    testPassed = false;
+                } else {
+                    console.log(`✅ 函数 ${funcName} 存在`);
+                }
+            });
+            
+            // 测试 2：检查关键DOM元素
+            const criticalElements = ['watchReportArea', 'reportOutput', 'daysContainer'];
+            criticalElements.forEach(elementId => {
+                const element = document.getElementById(elementId);
+                if (!element) {
+                    console.error(`❌ 元素 ${elementId} 不存在`);
+                    testPassed = false;
+                } else {
+                    console.log(`✅ 元素 ${elementId} 存在`);
+                }
+            });
+            
+            if (testPassed) {
+                console.log('✅ 核心报告功能测试通过！');
+                alert('✅ 报告功能测试通过，所有必要组件都正常工作。');
+            } else {
+                console.error('❌ 报告功能测试失败，存在问题需要修复。');
+                alert('❌ 报告功能测试失败，请检查控制台日志获取详细错误信息。');
+            }
+            
+            return testPassed;
+        }
+
+        // 重置所有数据（用于测试）
+        function resetAllData() {
+            globalHealthData = {};
+            initializeForm();
+            hideWatchReport();
+            console.log('✅ 已重置所有数据');
+        }
+
+        function generateHealthReport(allData) {
+            // 只对实际存在的数据计算平均值
+            const calculateAverage = (values) => {
+                const validValues = values.filter(val => val !== undefined && val !== null && !isNaN(val));
+                return validValues.length > 0 ? validValues.reduce((sum, val) => sum + val, 0) / validValues.length : 0;
+            };
+            
+            // 提取各类数据
+            const sleepData = allData.filter(d => d.deepSleep !== undefined || d.restingHR !== undefined || d.bloodOxygen !== undefined);
+            const activityData = allData.filter(d => d.stressLevel !== undefined || d.dailySteps !== undefined || d.moodStatus !== undefined);
+            const cycleData = allData.filter(d => d.cycleStatus !== undefined);
+            
+            const deepSleepAvg = calculateAverage(sleepData.map(d => d.deepSleep));
+            const sleepScoreAvg = calculateAverage(sleepData.map(d => d.sleepScore));
+            const stressLevelAvg = calculateAverage(activityData.map(d => d.stressLevel));
+            const dailyStepsAvg = calculateAverage(activityData.map(d => d.dailySteps));
+            const restingHRAvg = calculateAverage(sleepData.map(d => d.restingHR));
+            const bloodOxygenAvg = calculateAverage(sleepData.map(d => d.bloodOxygen));
+            
+            // 生成健康状态描述
+            const getSleepStatus = () => {
+                if (sleepData.length === 0) return '暂无数据';
+                if (deepSleepAvg >= 1.5) return '良好';
+                if (deepSleepAvg >= 1.0) return '一般';
+                return '较差';
+            };
+            const getStressStatus = () => {
+                if (activityData.length === 0) return '暂无数据';
+                if (stressLevelAvg < 30) return '轻松';
+                if (stressLevelAvg < 70) return '中等';
+                return '偏高';
+            };
+            const getActivityStatus = () => {
+                if (activityData.length === 0) return '暂无数据';
+                if (dailyStepsAvg >= 8000) return '达标';
+                if (dailyStepsAvg >= 5000) return '一般';
+                return '不足';
+            };
+            
+            // 生成各天数据详情
+            const generateDailyDetails = () => {
+                return allData.map(data => {
+                    let details = `第${data.day}天（${getModuleName(data.module)}）：\n`;
+                    
+                    if (data.deepSleep !== undefined) details += `- 睡眠时长：${data.deepSleep.toFixed(1)}小时\n`;
+                    if (data.sleepScore !== undefined) details += `- 睡眠得分：${data.sleepScore.toFixed(0)}分\n`;
+                    if (data.stressLevel !== undefined) details += `- 压力值：${data.stressLevel.toFixed(0)}\n`;
+                    if (data.dailySteps !== undefined) details += `- 步数：${data.dailySteps.toFixed(0)}步\n`;
+                    if (data.restingHR !== undefined) details += `- 静息心率：${data.restingHR.toFixed(0)}次/分\n`;
+                    if (data.bloodOxygen !== undefined) details += `- 血氧：${data.bloodOxygen.toFixed(0)}%\n`;
+                    if (data.cycleStatus !== undefined) details += `- 周期：${data.cycleStatus}\n`;
+                    if (data.moodStatus !== undefined) details += `- 状态：${data.moodStatus}\n`;
+                    
+                    return details.trim();
+                }).join('\n\n');
+            };
+            
+            const getModuleName = (module) => {
+                const names = { sleep: '睡眠数据', activity: '运动数据', cycle: '周期数据' };
+                return names[module] || '健康数据';
+            };
+            
+            // 生成汇总报告
+            let report = `华为健康报告（${allData.length}条数据汇总）\n`;
+            report += `时间：${new Date().toLocaleDateString('zh-CN')}\n\n`;
+            
+            report += `健康状态：\n`;
+            report += `睡眠质量：${getSleepStatus()}${sleepData.length > 0 ? ` (${deepSleepAvg.toFixed(1)}小时平均)` : ''}\n`;
+            report += `压力水平：${getStressStatus()}${activityData.length > 0 ? ` (${stressLevelAvg.toFixed(0)}平均)` : ''}\n`;
+            report += `运动达标：${getActivityStatus()}${activityData.length > 0 ? ` (${dailyStepsAvg.toFixed(0)}步平均)` : ''}\n`;
+            report += `静息心率：${restingHRAvg > 0 ? `${restingHRAvg.toFixed(0)}次/分` : '暂无数据'}\n`;
+            report += `血氧饱和度：${bloodOxygenAvg > 0 ? `${bloodOxygenAvg.toFixed(0)}%` : '暂无数据'}\n\n`;
+            
+            report += `详细数据：\n${generateDailyDetails()}\n\n`;
+            
+            report += `建议：\n`;
+            report += `• 保持规律作息，确保充足睡眠\n`;
+            report += `• 适度运动，缓解工作压力  \n`;
+            report += `• 关注身体信号，及时调整状态`;
+            
+            return report;
+        }
+
+        function copyReport(reportText) {
+            if (!reportText) {
+                reportText = document.getElementById('reportOutput').textContent;
+            }
+            
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(reportText).then(() => {
+                    showCopySuccess();
+                }).catch(err => {
+                    console.error('复制失败:', err);
+                    fallbackCopyTextToClipboard(reportText);
+                });
+            } else {
+                fallbackCopyTextToClipboard(reportText);
+            }
+        }
+
+        function fallbackCopyTextToClipboard(text) {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            textArea.style.top = "0";
+            textArea.style.left = "0";
+            textArea.style.position = "fixed";
+            
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            try {
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    showCopySuccess();
+                } else {
+                    alert('复制失败，请手动复制');
+                }
+            } catch (err) {
+                console.error('复制失败:', err);
+                alert('复制失败，请手动复制');
+            }
+            
+            document.body.removeChild(textArea);
+        }
+
+        function showCopySuccess() {
+            // 查找报告按钮（手表界面或数据录入界面）
+            const moduleReportBtn = document.querySelector('.module-report');
+            const generateBtn = document.querySelector('.generate-btn');
+            
+            let targetBtn = generateBtn;
+            let originalText = '生成并复制报告';
+            
+            // 如果在手表界面，使用模块按钮
+            if (document.getElementById('watchMain').style.display === 'block' && moduleReportBtn) {
+                targetBtn = moduleReportBtn;
+                originalText = '📊\n报告';
+            }
+            
+            if (targetBtn) {
+                const successText = targetBtn === moduleReportBtn ? '✓ 已复制' : '已复制到剪贴板 ✓';
+                
+                if (targetBtn === moduleReportBtn) {
+                    // 手表界面按钮特殊处理
+                    const originalHTML = targetBtn.innerHTML;
+                    targetBtn.innerHTML = `<div class="module-icon">✓</div><div>已复制</div>`;
+                    targetBtn.style.background = '#27ae60';
+                    
+                    setTimeout(() => {
+                        targetBtn.innerHTML = originalHTML;
+                        targetBtn.style.background = '#e74c3c';
+                    }, 2000);
+                } else {
+                    // 数据录入界面按钮
+                    targetBtn.textContent = successText;
+                    targetBtn.classList.add('success');
+                    
+                    setTimeout(() => {
+                        targetBtn.textContent = originalText;
+                        targetBtn.classList.remove('success');
+                    }, 2000);
+                }
+            }
+            
+            // 同时显示复制成功的提示
+            showWatchReport('✅ 报告已复制到剪贴板！\n\n您可以粘贴到任何文本编辑器中保存或分享。');
+        }
+
+        // 时间更新功能
+        function updateWatchTime() {
+            const now = new Date();
+            const hours = now.getHours().toString().padStart(2, '0');
+            const minutes = now.getMinutes().toString().padStart(2, '0');
+            const timeString = `${hours}:${minutes}`;
+            
+            const dateString = `${now.getMonth() + 1}月${now.getDate()}日 ${['周日', '周一', '周二', '周三', '周四', '周五', '周六'][now.getDay()]}`;
+            
+            const moonPhase = getMoonPhase();
+            const moonString = moonPhase.emoji + ' ' + moonPhase.name;
+            
+            // 更新数据周期为只显示当天
+            const periodString = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}`;
+            const dataPeriodElement = document.getElementById('dataPeriod');
+            if (dataPeriodElement) {
+                dataPeriodElement.textContent = `数据周期：${periodString}`;
+            }
+            
+            document.getElementById('watchTime').textContent = timeString;
+            document.getElementById('watchDate').textContent = dateString;
+            document.getElementById('watchMoon').textContent = moonString;
+        }
+
+        // 获取月相
+        function getMoonPhase() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = now.getMonth() + 1;
+            const day = now.getDate();
+            
+            // 简单的月相计算（基于2025年11月27日为新月）
+            const newMoonDate = new Date(2025, 10, 27); // 2025年11月27日新月
+            const daysSinceNewMoon = Math.floor((now - newMoonDate) / (1000 * 60 * 60 * 24));
+            const lunarCycle = 29.53; // 月球周期
+            const currentPhase = (daysSinceNewMoon % lunarCycle) / lunarCycle;
+            
+            let phase, emoji;
+            
+            if (currentPhase < 0.0625 || currentPhase >= 0.9375) {
+                phase = '新月';
+                emoji = '🌑';
+            } else if (currentPhase < 0.1875) {
+                phase = '峨眉月';
+                emoji = '🌒';
+            } else if (currentPhase < 0.3125) {
+                phase = '上弦月';
+                emoji = '🌓';
+            } else if (currentPhase < 0.4375) {
+                phase = '盈凸月';
+                emoji = '🌔';
+            } else if (currentPhase < 0.5625) {
+                phase = '满月';
+                emoji = '🌕';
+            } else if (currentPhase < 0.6875) {
+                phase = '亏凸月';
+                emoji = '🌖';
+            } else if (currentPhase < 0.8125) {
+                phase = '下弦月';
+                emoji = '🌗';
+            } else {
+                phase = '残月';
+                emoji = '🌘';
+            }
+            
+            return { name: phase, emoji: emoji };
+        }
+
+        // 生成表盘刻度
+        function generateWatchScale() {
+            const scaleContainer = document.getElementById('watchScale');
+            if (!scaleContainer) return;
+            
+            scaleContainer.innerHTML = '';
+            
+            // 生成60个刻度（每分钟一个）
+            for (let i = 0; i < 60; i++) {
+                const mark = document.createElement('div');
+                mark.className = 'scale-mark' + (i % 5 === 0 ? ' major' : '');
+                mark.style.transform = `rotate(${i * 6}deg)`;
+                scaleContainer.appendChild(mark);
+            }
+        }
+
+        // 添加键盘事件监听
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape' || event.key === 'Backspace') {
+                showWatchMain();
+            }
+        });
+
+        // 检查并返回主界面的函数
+        function checkAndReturnToMain() {
+            // 检查全局健康数据是否有任何录入的数据
+            let hasData = false;
+            
+            // 检查所有模块类型的数据
+            Object.keys(globalHealthData).forEach(moduleType => {
+                const moduleData = globalHealthData[moduleType];
+                if (moduleData && typeof moduleData === 'object') {
+                    // 检查该模块的每一天是否有数据
+                    Object.keys(moduleData).forEach(day => {
+                        const dayData = moduleData[day];
+                        if (dayData && typeof dayData === 'object') {
+                            // 检查是否有任何字段有非空值
+                            Object.values(dayData).forEach(value => {
+                                if (value !== null && value !== undefined && value !== '' && value !== 0) {
+                                    hasData = true;
+                                }
+                            });
+                        }
+                    });
+                }
+            });
+            
+            if (hasData) {
+                // 有数据，直接返回主界面
+                showWatchMain();
+            } else {
+                // 没有数据，询问确认
+                const confirmReturn = confirm('当前没有任何数据录入，确定要返回主界面吗？\n\n提示：您可以先录入一些健康数据，或者点击"确定"直接返回。');
+                if (confirmReturn) {
+                    showWatchMain();
+                }
+            }
+        }
+
+        // 页面加载完成初始化
+        window.addEventListener('load', function() {
+            console.log('手表式健康数据报告生成器已加载完成');
+            
+            // 生成表盘刻度
+            setTimeout(generateWatchScale, 100);
+            
+            // 显示手表主界面
+            setTimeout(() => {
+                showWatchMain();
+            }, 200);
+            
+            // 立即更新时间并设置每分钟更新
+            updateWatchTime();
+            setInterval(updateWatchTime, 60000);
+        });
+    </script>
+</body>
+</html>
